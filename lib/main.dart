@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
+import 'SCREENS/firstscreen.dart';
+import 'SCREENS/loginscreen.dart';
+import 'SCREENS/mainscreen.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -20,26 +24,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Proj2',
-      home: const FirebaseReadyScreen(),
-    );
-  }
-}
-
-class FirebaseReadyScreen extends StatelessWidget {
-  const FirebaseReadyScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Firebase Connected'),
-      ),
-      body: const Center(
-        child: Text(
-          'Firebase setup is complete.',
-          style: TextStyle(fontSize: 20),
-        ),
-      ),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const firstscreen(),
+        '/login': (context) => const loginscreen(),
+        '/main': (context) => const mainscreen(),
+      },
     );
   }
 }
