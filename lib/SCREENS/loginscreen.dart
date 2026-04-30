@@ -89,7 +89,14 @@ class _loginscreenState extends State<loginscreen>{
             const SizedBox(height:15),
             loading
               ? const CircularProgressIndicator()
-              : ElevatedButton(onPressed: loginUser, child: const Text("Login"))
+              : ElevatedButton(onPressed: loginUser, child: const Text("Login")),
+
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/create_account');
+              },
+              child: const Text('Create Account'),
+            ),
           ],
         ),
       ),

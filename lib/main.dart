@@ -9,7 +9,7 @@ import 'SCREENS/mainscreen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  //Making sure Firebase has loaded
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -26,6 +26,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Proj2',
       initialRoute: '/',
+      //A way to plot the different pages
       routes: {
     '/': (context) => StreamBuilder<User?>(
           stream: FirebaseAuth.instance.authStateChanges(),
@@ -35,14 +36,15 @@ class MyApp extends StatelessWidget {
                 body: Center(child: CircularProgressIndicator()),
               );
             }
-
+        //Bypass for logging in each time
             if (snapshot.hasData) {
               return const mainscreen();
             }
-
+        //Welcome screen
             return const firstscreen();
           },
         ),
+    //Identifying the other pages
     '/login': (context) => const loginscreen(),
     '/main': (context) => const mainscreen(),
   },

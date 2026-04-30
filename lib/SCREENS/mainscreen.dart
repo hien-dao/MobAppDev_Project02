@@ -19,7 +19,7 @@ class mainscreen extends StatelessWidget {
               style: TextStyle(fontSize: 24),
             ),
             const SizedBox(height: 20),
-
+            //Main screen features will be updated
             ElevatedButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/login');
