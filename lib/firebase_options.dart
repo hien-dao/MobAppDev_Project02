@@ -28,12 +28,12 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'PASTE_ANDROID_API_KEY_HERE',
-    appId: 'PASTE_ANDROID_APP_ID_HERE',
-    messagingSenderId: 'PASTE_MESSAGING_SENDER_ID_HERE',
-    projectId: 'PASTE_PROJECT_ID_HERE',
-    storageBucket: 'PASTE_STORAGE_BUCKET_HERE',
-  );
+  apiKey: 'AIzaSyCH0B0Plv9jbTBRX1TXMvrywmh03wp8xMk',
+  appId: '1:70811641155:android:f80d3ba1fdd5b2eabf3bf6',
+  messagingSenderId: '70811641155',
+  projectId: 'proj2-database',
+  storageBucket: 'proj2-database.firebasestorage.app',
+);
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'PASTE_IOS_API_KEY_HERE',

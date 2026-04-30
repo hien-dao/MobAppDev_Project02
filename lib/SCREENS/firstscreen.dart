@@ -1,38 +1,35 @@
 import 'package:flutter/material.dart';
 
-class Firstscreen extends StatelessWidget {
-  const Firstscreen({super.key});
+class firstscreen extends StatelessWidget {
+  const firstscreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Welcome'),
-      ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Home Page',
-              style: TextStyle(fontSize: 24),
-            ),
-            const SizedBox(height: 20),
-
-            ElevatedButton(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+         const Text(
+          'Welcome',
+          style: TextStyle(fontSize: 24),
+        ),
+        const SizedBox(height: 20),
+        //Go to login via /login
+        ElevatedButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/login');
               },
-              child: const Text('Go to Search Page'),
+              child: const Text('Login'),
             ),
-
-            ElevatedButton(
+        //Go to create account via /create_account  
+        ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/main');
+                Navigator.pushNamed(context, '/create_account');
               },
-              child: const Text('Go to Profile Page'),
+              child: const Text('Create Account'),
             ),
-          ],
+        ],
         ),
       ),
     );
