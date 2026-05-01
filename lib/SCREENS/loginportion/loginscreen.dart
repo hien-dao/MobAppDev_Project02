@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'mainscreen.dart';
+import '../mainscreen.dart';
 
 class loginscreen extends StatefulWidget {
   const loginscreen({super.key});
@@ -10,7 +9,7 @@ class loginscreen extends StatefulWidget {
 }
 
 class _loginscreenState extends State<loginscreen>{
-  final usernameController = TextEditingController();
+  final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   //Tracking if the  my app is logging in
@@ -21,22 +20,12 @@ class _loginscreenState extends State<loginscreen>{
       loading= true;
     });
     try{
-      //Initialization of the login variables
-      String username= usernameController.text.trim();
+      //reads the email entered by the user
+      String email= emailController.text.trim();
       String password = passwordController.text.trim();
-      String email = "$username@proj2.com"; //Put restrictions around email inserts
-
-      UserCredential userCredential =
+      //firebase authentication
       await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
-      await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userCredential.user!.uid)
-        .set({
-          'username': username,
-          'last login': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true));
-
+      //starts main screen after succesful login.
         Navigator.pushReplacement(
           context, 
           MaterialPageRoute(builder: (context) => const mainscreen()),
@@ -52,7 +41,7 @@ class _loginscreenState extends State<loginscreen>{
     }
     @override
     void dispose(){
-      usernameController.dispose();
+      emailController.dispose();
       passwordController.dispose();
       super.dispose();
     }
@@ -72,9 +61,9 @@ class _loginscreenState extends State<loginscreen>{
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextField(
-              controller:usernameController,
+              controller:emailController,
               decoration: const InputDecoration(
-                labelText: "Username",
+                labelText: "Email",
                 border: OutlineInputBorder(),
               ),
             ),
@@ -90,10 +79,10 @@ class _loginscreenState extends State<loginscreen>{
             loading
               ? const CircularProgressIndicator()
               : ElevatedButton(onPressed: loginUser, child: const Text("Login")),
-
+            //goes to create account page
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/create_account');
+                Navigator.pushNamed(context, '/createaccount');
               },
               child: const Text('Create Account'),
             ),

@@ -4,8 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 
 import 'SCREENS/firstscreen.dart';
-import 'SCREENS/loginscreen.dart';
+import 'SCREENS/loginportion/loginscreen.dart';
 import 'SCREENS/mainscreen.dart';
+import 'SCREENS/loginportion/createaccount.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +48,7 @@ class MyApp extends StatelessWidget {
     //Identifying the other pages
     '/login': (context) => const loginscreen(),
     '/main': (context) => const mainscreen(),
+    '/createaccount': (context) => const createaccount(),
   },
   );
   }

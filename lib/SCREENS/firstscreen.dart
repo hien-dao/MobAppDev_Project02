@@ -25,7 +25,7 @@ class firstscreen extends StatelessWidget {
         //Go to create account via /create_account  
         ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/create_account');
+                Navigator.pushNamed(context, '/createaccount');
               },
               child: const Text('Create Account'),
             ),
