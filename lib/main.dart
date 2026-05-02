@@ -39,16 +39,16 @@ class MyApp extends StatelessWidget {
             }
         //Bypass for logging in each time
             if (snapshot.hasData) {
-              return const mainscreen();
+              return const MainScreen();
             }
         //Welcome screen
-            return const firstscreen();
+            return const FirstScreen();
           },
         ),
     //Identifying the other pages
-    '/login': (context) => const loginscreen(),
-    '/main': (context) => const mainscreen(),
-    '/createaccount': (context) => const createaccount(),
+    '/login': (context) => const LoginScreen(),
+    '/main': (context) => const MainScreen(),
+    '/createaccount': (context) => const CreateAccountScreen(),
   },
   );
   }
