@@ -1,13 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/trip.dart';
 
 class TripDatabasehelper {
-  final _firestore = FirebaseFirestore.instance.collection('trips');
+  CollectionReference<Map<String, dynamic>> _userTripsCollection() {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      throw Exception('No user is currently logged in');
+    }
+
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('trips');
+  }
 
   Future<void> addTrip(Map<String, dynamic> tripData) async {
     try {
-      await _firestore.add(tripData);
+      await _userTripsCollection().add(tripData);
     } catch (e) {
       print('Error adding trip: $e');
     }
@@ -15,7 +27,7 @@ class TripDatabasehelper {
 
   Future<void> updateTrip(String tripId, Map<String, dynamic> updatedData) async {
     try {
-      await _firestore.doc(tripId).update(updatedData);
+      await _userTripsCollection().doc(tripId).update(updatedData);
     } catch (e) {
       print('Error updating trip: $e');
     }
@@ -23,15 +35,17 @@ class TripDatabasehelper {
 
   Future<void> deleteTrip(String tripId) async {
     try {
-      await _firestore.doc(tripId).delete();
+      await _userTripsCollection().doc(tripId).delete();
     } catch (e) {
       print('Error deleting trip: $e');
     }
   }
 
   Stream<List<Trip>> getTrips() {
-    return _firestore.snapshots().map(
-      (snap) => snap.docs.map((d) => Trip.fromMap(d.data() as Map<String, dynamic>, d.id)).toList(),
-    );
+    return _userTripsCollection().snapshots().map(
+          (snap) => snap.docs
+              .map((d) => Trip.fromMap(d.data(), d.id))
+              .toList(),
+        );
   }
 }
