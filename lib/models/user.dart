@@ -10,7 +10,7 @@ class User {
 
   User({required this.id, required this.firstname, required this.lastname, required this.email, required this.username, required this.createdAt});
 
-  factory User.fromJson(Map<String, dynamic> json) {
+  factory User.fromMap(Map<String, dynamic> json) {
     return User(
       id: json['id'],
       firstname: json['firstname'],
@@ -21,7 +21,7 @@ class User {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'firstname': firstname,
