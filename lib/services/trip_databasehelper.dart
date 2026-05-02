@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../models/trip.dart';
+
 class TripDatabasehelper {
   final _firestore = FirebaseFirestore.instance.collection('trips');
 
@@ -27,7 +29,9 @@ class TripDatabasehelper {
     }
   }
 
-  Stream<QuerySnapshot> getTrips() {
-    return _firestore.snapshots();
+  Stream<List<Trip>> getTrips() {
+    return _firestore.snapshots().map(
+      (snap) => snap.docs.map((d) => Trip.fromMap(d.data() as Map<String, dynamic>, d.id)).toList(),
+    );
   }
 }

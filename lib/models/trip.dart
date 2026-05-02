@@ -8,7 +8,7 @@ class Trip {
   DateTime endDate;
 
   String origin;
-  String destinations;
+  String destination;
 
   double totalCost;
 
@@ -18,7 +18,7 @@ class Trip {
     required this.startDate,
     required this.endDate,
     required this.origin,
-    required this.destinations,
+    required this.destination,
     required this.totalCost,
   });
 
@@ -29,7 +29,7 @@ class Trip {
       startDate: (data['startDate'] as Timestamp).toDate(),
       endDate: (data['endDate'] as Timestamp).toDate(),
       origin: data['origin'] ?? '',
-      destinations: data['destinations'] ?? '',
+      destination: data['destination'] ?? '',
       totalCost: (data['totalCost'] as num).toDouble(),
     );
   }
@@ -40,7 +40,7 @@ class Trip {
       'startDate': Timestamp.fromDate(startDate),
       'endDate': Timestamp.fromDate(endDate),
       'origin': origin,
-      'destinations': destinations,
+      'destination': destination,
       'totalCost': totalCost,
     };
   }
