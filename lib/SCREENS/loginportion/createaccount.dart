@@ -26,7 +26,7 @@ class _CreateAccountState extends State<CreateAccountScreen> {
 
   // Regex pattern for basic validation
   final RegExp _emailPattern = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-  final RegExp _passwordPattern = RegExp(r'^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()\-\+=])(?=\S+$).{12,}$');
+  final RegExp _passwordPattern = RegExp(r'^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()\-\+=])(?=\S+$).{6,}$');
 
   // State variables for password visibility
   bool _isPasswordVisible = false;
@@ -139,7 +139,7 @@ class _CreateAccountState extends State<CreateAccountScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // 🔒 Password Field
+                //Password Field
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
@@ -147,6 +147,7 @@ class _CreateAccountState extends State<CreateAccountScreen> {
                     labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock),
                     border: const OutlineInputBorder(),
+                    errorMaxLines: 3,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
@@ -155,7 +156,7 @@ class _CreateAccountState extends State<CreateAccountScreen> {
                         setState(() {
                           _isPasswordVisible = !_isPasswordVisible;
                         });
-                      }, // This will be updated to toggle visibility
+                      },
                     ),
                   ),
                   validator: (value) {
@@ -163,14 +164,14 @@ class _CreateAccountState extends State<CreateAccountScreen> {
                       return 'Please enter a password';
                     }
                     if (!_passwordPattern.hasMatch(value)) {
-                      return 'Password must be at least 12 characters with uppercase, lowercase, number, and special character';
+                      return 'Password must be at least 6 characters with uppercase, lowercase, number, and special character';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
 
-                // 🔒 Confirm Password Field
+                //  Confirm Password Field
                 TextFormField(
                   obscureText: !_isConfirmPasswordVisible,
                   decoration: InputDecoration(
