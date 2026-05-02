@@ -41,8 +41,8 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void openAddTripPage() {
-    Navigator.push(
+  Future<void> openAddTripPage() async {
+    final addedTrip = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddTrip(
@@ -50,6 +50,34 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
     );
+
+    if (addedTrip == true && mounted) {
+      rebuildTripList();
+    }
+  }
+
+  Future<void> openEditTripPage(Trip trip) async {
+    final updatedTrip = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddTrip(
+          rebuildMainScreen: rebuildTripList,
+          tripToEdit: trip,
+        ),
+      ),
+    );
+
+    if (updatedTrip == true && mounted) {
+      rebuildTripList();
+    }
+  }
+
+  String formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    final year = date.year.toString();
+
+    return '$month/$day/$year';
   }
 
   @override
@@ -108,10 +136,28 @@ class _MainScreenState extends State<MainScreen> {
                   itemBuilder: (context, index) {
                     final trip = items[index];
 
-                    return ListTile(
-                      title: Text(trip.destination),
-                      subtitle: Text(
-                        'From ${trip.startDate} to ${trip.endDate}',
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: ListTile(
+                        title: Text(
+                          trip.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        subtitle: Text(
+                          '${trip.origin} to ${trip.destination}\n'
+                          '${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}\n'
+                          'Cost: \$${trip.totalCost.toStringAsFixed(2)}',
+                        ),
+                        isThreeLine: true,
+                        trailing: const Icon(Icons.edit),
+                        onTap: () {
+                          openEditTripPage(trip);
+                        },
                       ),
                     );
                   },
