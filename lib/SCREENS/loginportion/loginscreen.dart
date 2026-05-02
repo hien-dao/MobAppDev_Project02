@@ -145,6 +145,23 @@ class _LoginScreenState extends State<LoginScreen>{
                       ),
                   ),
                 ),
+
+                // Go to create account via /create_account
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Don't have an account?"),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(context, '/createaccount');
+                      },
+                      child: const Text(
+                        "Create Account",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         )
