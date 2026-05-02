@@ -20,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen>{
 
   // Regex pattern for basic validation
   final RegExp _emailPattern = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-  final RegExp _passwordPattern = RegExp(r'^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()\-\+=])(?=\S+$).{12,}$');
+  final RegExp _passwordPattern = RegExp(r'^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()\-\+=])(?=\S+$).{6,}$');
 
   // State variables for password visibility
   bool _isPasswordVisible = false;
@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen>{
                     return 'Please enter a password';
                   }
                   if (!_passwordPattern.hasMatch(value)) {
-                    return 'Password must be at least 12 characters with uppercase, lowercase, number, and special character';
+                    return 'Password must be at least 6 characters with uppercase, lowercase, number, and special character';
                   }
                   return null;
                 },
