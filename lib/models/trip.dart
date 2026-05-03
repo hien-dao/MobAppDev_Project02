@@ -10,7 +10,9 @@ class Trip {
   String origin;
   String destination;
 
-  double totalCost;
+  double budgetLimit;
+
+  List<String> memberIds; // user IDs
 
   Trip({
     required this.id,
@@ -19,7 +21,8 @@ class Trip {
     required this.endDate,
     required this.origin,
     required this.destination,
-    required this.totalCost,
+    required this.budgetLimit,
+    required this.memberIds,
   });
 
   factory Trip.fromMap(Map<String, dynamic> data, String documentId) {
@@ -30,7 +33,8 @@ class Trip {
       endDate: (data['endDate'] as Timestamp).toDate(),
       origin: data['origin'] ?? '',
       destination: data['destination'] ?? '',
-      totalCost: (data['totalCost'] as num).toDouble(),
+      budgetLimit: (data['budgetLimit'] as num).toDouble(),
+      memberIds: List<String>.from(data['memberIds'] ?? []),
     );
   }
 
@@ -41,7 +45,8 @@ class Trip {
       'endDate': Timestamp.fromDate(endDate),
       'origin': origin,
       'destination': destination,
-      'totalCost': totalCost,
+      'budgetLimit': budgetLimit,
+      'memberIds': memberIds,
     };
   }
 }
