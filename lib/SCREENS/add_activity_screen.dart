@@ -34,6 +34,21 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
 
   Map<String, dynamic>? selectedPlace;
 
+  // Estimated durations (in minutes) for different types of places
+  int getEstimatedDuration(String name) {
+    final lower = name.toLowerCase();
+
+    if (lower.contains("museum")) return 180;
+    if (lower.contains("tower")) return 90;
+    if (lower.contains("park")) return 120;
+    if (lower.contains("restaurant")) return 90;
+    if (lower.contains("church")) return 60;
+    if (lower.contains("landmark")) return 90;
+    if (lower.contains("cinema")) return 150;
+
+    return 120;
+  }
+
   // ---------------- SEARCH PLACES ----------------
   Future<void> searchPlaces(String query) async {
     if (query.trim().isEmpty) {
@@ -90,6 +105,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
 
       startTime: DateTime.now(),
       endTime: DateTime.now(),
+      durationMinutes: getEstimatedDuration(name), 
 
       order: widget.nextOrder,
       addedBy: user?.uid ?? '',

@@ -12,6 +12,7 @@ class Activity {
 
   DateTime startTime;
   DateTime endTime;
+  int durationMinutes;
 
   int order; // position in itinerary
 
@@ -25,6 +26,7 @@ class Activity {
     required this.cost,
     required this.startTime,
     required this.endTime,
+    required this.durationMinutes,
     required this.order,
     required this.addedBy,
   });
@@ -38,6 +40,7 @@ class Activity {
       cost: (data['cost'] ?? 0).toDouble(),
       startTime: (data['startTime'] as Timestamp).toDate(),
       endTime: (data['endTime'] as Timestamp).toDate(),
+      durationMinutes: data['durationMinutes'] ?? 120,
       order: data['order'] ?? 0,
       addedBy: data['addedBy'] ?? '',
     );
@@ -51,6 +54,7 @@ class Activity {
       'cost': cost,
       'startTime': Timestamp.fromDate(startTime),
       'endTime': Timestamp.fromDate(endTime),
+      'durationMinutes': durationMinutes,
       'order': order,
       'addedBy': addedBy,
     };
