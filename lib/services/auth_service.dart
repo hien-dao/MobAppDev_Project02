@@ -74,7 +74,7 @@ class AuthService {
     }
   }
 
-    Future<void> deleteAccount() async {
+  Future<void> deleteAccount() async {
     try {
       final user = _auth.currentUser;
       if (user != null) {
@@ -84,6 +84,49 @@ class AuthService {
     } catch (e) {
       print('Error deleting account: $e');
       rethrow; // Rethrow the error to be handled by the caller
+    }
+  }
+
+  // Search user by username
+  Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+    try {
+      if (query.trim().isEmpty) return [];
+
+      final snapshot = await _usersCollection
+          .where('username', isGreaterThanOrEqualTo: query)
+          .where('username', isLessThanOrEqualTo: query + '\uf8ff')
+          .limit(10)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        return {
+          'uid': doc.id,
+          'username': doc['username'],
+          'email': doc['email'],
+        };
+      }).toList();
+    } catch (e) {
+      print('Error searching users: $e');
+      return [];
+    }
+  }
+
+  // Search username by id
+  Future<Map<String, String>> getUsernamesByIds(List<String> uids) async {
+    try {
+      final Map<String, String> result = {};
+
+      for (final uid in uids) {
+        final doc = await _usersCollection.doc(uid).get();
+        if (doc.exists) {
+          result[uid] = doc['username'];
+        }
+      }
+
+      return result;
+    } catch (e) {
+      print('Error fetching usernames: $e');
+      return {};
     }
   }
 
