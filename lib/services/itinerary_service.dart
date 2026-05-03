@@ -1,25 +1,45 @@
 import '../models/activity.dart';
+import 'route_optimizer.dart';
 
-class ItineraryService {
-  List<Activity> buildSchedule(List<Activity> activities) {
-    activities.sort((a, b) => a.order.compareTo(b.order));
+class ItineraryScheduler {
+  final RouteOptimizer _routeOptimizer = RouteOptimizer();
 
-    DateTime currentTime = DateTime(2026, 1, 1, 9, 0); // start 9AM
+  Future<List<Activity>> schedule({
+    required List<Activity> activities,
+    required DateTime tripStart,
+  }) async {
+    if (activities.isEmpty) return [];
 
-    List<Activity> scheduled = [];
+    DateTime currentTime = tripStart;
 
-    for (final activity in activities) {
-      final start = currentTime;
-      final end = start.add(Duration(minutes: activity.durationMinutes));
+    for (int i = 0; i < activities.length; i++) {
+      final a = activities[i];
 
-      activity.startTime = start;
-      activity.endTime = end;
+      // add travel time from previous activity
+      if (i > 0) {
+        final prev = activities[i - 1];
 
-      scheduled.add(activity);
+        final travelMinutes = await _routeOptimizer.getTravelTimeMinutes(
+          lat1: prev.latitude,
+          lng1: prev.longitude,
+          lat2: a.latitude,
+          lng2: a.longitude,
+        );
 
-      currentTime = end.add(const Duration(minutes: 30)); // travel buffer
+        currentTime = currentTime.add(
+          Duration(minutes: travelMinutes),
+        );
+      }
+
+      a.startTime = currentTime;
+
+      currentTime = currentTime.add(
+        Duration(minutes: a.durationMinutes),
+      );
+
+      a.endTime = currentTime;
     }
 
-    return scheduled;
+    return activities;
   }
 }
