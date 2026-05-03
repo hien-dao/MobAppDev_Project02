@@ -27,32 +27,63 @@ class _ActivityScreenState extends State<ActivityScreen> {
   final RouteOptimizer optimizer = RouteOptimizer();
   final ItineraryScheduler scheduler = ItineraryScheduler();
 
+  List<Activity> _activities = [];
+
+  // ---------------- ORDER HELP ----------------
   int getNextOrder(List<Activity> activities) {
     if (activities.isEmpty) return 0;
     activities.sort((a, b) => a.order.compareTo(b.order));
     return activities.last.order + 1;
   }
 
-  // ---------------- BUILD LIST ----------------
-  List<Activity> buildOptimizedList(List<Activity> activities) {
-    if (activities.isEmpty) return [];
-    return optimizer.optimize(activities);
-  }
-
+  // ---------------- FORMAT TIME ----------------
   String formatTime(DateTime time) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return "$hour:$minute";
   }
 
+  // ---------------- OPTIMIZE ROUTE ----------------
+  Future<void> optimizeRoute() async {
+    if (_activities.isEmpty) return;
+
+    final optimized = optimizer.optimize(_activities);
+
+    for (int i = 0; i < optimized.length; i++) {
+      optimized[i].order = i;
+    }
+
+    await Future.wait(
+      optimized.map(
+        (a) => _db.updateActivity(
+          widget.trip.id,
+          a.id,
+          a.toMap(),
+        ),
+      ),
+    );
+
+    setState(() {
+      _activities = optimized;
+    });
+  }
+
+  // ---------------- BUILD ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "Drag to reorder your activities",
+          "Activities",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome),
+            tooltip: "Auto Optimize Route",
+            onPressed: optimizeRoute,
+          ),
+        ],
       ),
 
       // ---------------- FAB ----------------
@@ -98,77 +129,73 @@ class _ActivityScreenState extends State<ActivityScreen> {
             return const Center(child: Text("No activities yet"));
           }
 
-          // 1. Convert Firestore → Activity list
-          final activities = docs
+          // convert firestore → model
+          _activities = docs
               .map((doc) => Activity.fromMap(doc.data(), doc.id))
               .toList();
 
-          // 2. Optimize order (distance)
-          activities.sort((a, b) => a.order.compareTo(b.order));
+          // sort by order
+          _activities.sort((a, b) => a.order.compareTo(b.order));
 
-          // 3. Schedule time (async)
           return FutureBuilder<List<Activity>>(
             future: scheduler.schedule(
-              activities: activities,
+              activities: _activities,
               tripStart: DateTime(
                 widget.trip.startDate.year,
                 widget.trip.startDate.month,
                 widget.trip.startDate.day,
-                9, // start at 9 AM
+                9, // 9 AM start
               ),
             ),
             builder: (context, scheduleSnapshot) {
-              if (!scheduleSnapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
+              final scheduled =
+                  scheduleSnapshot.data ?? _activities;
 
-              final scheduled = scheduleSnapshot.data!;
+              return ReorderableListView.builder(
+                itemCount: _activities.length,
 
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  return ReorderableListView.builder(
-                    itemCount: scheduled.length,
-                    onReorder: (oldIndex, newIndex) async {
-                      if (newIndex > oldIndex) newIndex--;
+                onReorder: (oldIndex, newIndex) async {
+                  if (newIndex > oldIndex) newIndex--;
 
-                      final item = activities.removeAt(oldIndex);
-                      activities.insert(newIndex, item);
+                  final item = _activities.removeAt(oldIndex);
+                  _activities.insert(newIndex, item);
 
-                      // 🔥 update order in memory
-                      for (int i = 0; i < activities.length; i++) {
-                        activities[i].order = i;
-                      }
+                  for (int i = 0; i < _activities.length; i++) {
+                    _activities[i].order = i;
+                  }
 
-                      // 🔥 save to Firebase
-                      for (final a in activities) {
-                        await _db.updateActivity(
-                          widget.trip.id,
-                          a.id,
-                          a.toMap(),
-                        );
-                      }
+                  await Future.wait(
+                    _activities.map(
+                      (a) => _db.updateActivity(
+                        widget.trip.id,
+                        a.id,
+                        a.toMap(),
+                      ),
+                    ),
+                  );
 
-                      setState(() {});
-                    },
+                  setState(() {});
+                },
 
-                    itemBuilder: (context, index) {
-                      final a = scheduled[index];
+                itemBuilder: (context, index) {
+                  final a = scheduled[index];
 
-                      return Card(
-                        key: ValueKey(a.id), // REQUIRED
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            child: Text("${index + 1}"),
-                          ),
-                          title: Text(a.name),
-                          subtitle: Text(
-                            "${formatTime(a.startTime)} - ${formatTime(a.endTime)}",
-                          ),
-                          trailing: const Icon(Icons.drag_handle), // UX hint
-                        ),
-                      );
-                    },
+                  return Card(
+                    key: ValueKey(a.id),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        child: Text("${index + 1}"),
+                      ),
+                      title: Text(a.name),
+                      subtitle: Text(
+                        "${formatTime(a.startTime)} - ${formatTime(a.endTime)}",
+                      ),
+                      trailing: const Icon(Icons.drag_handle),
+                    ),
                   );
                 },
               );
