@@ -32,8 +32,36 @@ class RouteOptimizer {
     return 15; // fallback travel time
   }
 
-  List<Activity> optimize(List<Activity> activities) {
-    activities.sort((a, b) => a.order.compareTo(b.order));
-    return activities;
+  Future<List<Activity>> optimize(List<Activity> activities) async {
+    if (activities.length <= 2) return activities;
+
+    List<Activity> optimized = [activities.first];
+    List<Activity> remaining = List.from(activities)..removeAt(0);
+
+    while (remaining.isNotEmpty) {
+      final last = optimized.last;
+
+      Activity? nearest;
+      int bestTime = 999999;
+
+      for (final candidate in remaining) {
+        final time = await getTravelTimeMinutes(
+          lat1: last.latitude,
+          lng1: last.longitude,
+          lat2: candidate.latitude,
+          lng2: candidate.longitude,
+        );
+
+        if (time < bestTime) {
+          bestTime = time;
+          nearest = candidate;
+        }
+      }
+
+      optimized.add(nearest!);
+      remaining.remove(nearest);
+    }
+
+    return optimized;
   }
 }

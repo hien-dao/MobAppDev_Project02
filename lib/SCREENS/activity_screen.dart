@@ -47,7 +47,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Future<void> optimizeRoute() async {
     if (_activities.isEmpty) return;
 
-    final optimized = optimizer.optimize(_activities);
+    final optimized = await optimizer.optimize(_activities);
 
     for (int i = 0; i < optimized.length; i++) {
       optimized[i].order = i;
