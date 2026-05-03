@@ -12,7 +12,7 @@ class Trip {
 
   double budgetLimit;
 
-  List<String> memberIds; // user IDs
+  List<String> memberIds; // accepted user IDs only
 
   Trip({
     required this.id,

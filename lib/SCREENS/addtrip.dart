@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../models/trip.dart';
-import '../services/trip_databasehelper.dart';
 import '../services/auth_service.dart';
+import '../services/invite_service.dart';
+import '../services/trip_databasehelper.dart';
 
 class AddTrip extends StatefulWidget {
   final VoidCallback rebuildMainScreen;
@@ -35,6 +36,7 @@ class _AddTripState extends State<AddTrip> {
   bool get isEditing => widget.tripToEdit != null;
 
   List<String> memberIds = [];
+  List<String> originalMemberIds = [];
   List<Map<String, dynamic>> foundUsers = [];
   Map<String, String> userNames = {};
 
@@ -66,9 +68,22 @@ class _AddTripState extends State<AddTrip> {
       selectedStartDate = trip.startDate;
       selectedEndDate = trip.endDate;
       memberIds = List<String>.from(trip.memberIds);
+      originalMemberIds = List<String>.from(trip.memberIds);
+    } else {
+      originalMemberIds = List<String>.from(memberIds);
     }
 
     loadUsernames();
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    originController.dispose();
+    destinationController.dispose();
+    budgetLimitController.dispose();
+    usernameSearchController.dispose();
+    super.dispose();
   }
 
   // ---------------- DATE PICKER ----------------
@@ -93,7 +108,9 @@ class _AddTripState extends State<AddTrip> {
 
   // ---------------- USER SEARCH ----------------
   Future<void> searchUsers(String username) async {
-    final result = await _authService.searchUsers(username);
+    final result = await _authService.searchUsers(username.trim());
+
+    if (!mounted) return;
 
     setState(() {
       foundUsers = result;
@@ -103,6 +120,8 @@ class _AddTripState extends State<AddTrip> {
   Future<void> loadUsernames() async {
     final map = await _authService.getUsernamesByIds(memberIds);
 
+    if (!mounted) return;
+
     setState(() {
       userNames = map;
     });
@@ -110,16 +129,27 @@ class _AddTripState extends State<AddTrip> {
 
   void addMember(Map<String, dynamic> user) {
     final uid = user['uid'];
+    final username = user['username'];
 
     if (!memberIds.contains(uid)) {
       setState(() {
         memberIds.add(uid);
-        userNames[uid] = user['username'];
+        userNames[uid] = username;
       });
     }
   }
+
   void removeMember(String userId) {
-    setState(() => memberIds.remove(userId));
+    final currentUser = _authService.currentUser;
+
+    if (currentUser != null && userId == currentUser.uid) {
+      showMessage('You cannot remove yourself from your own trip');
+      return;
+    }
+
+    setState(() {
+      memberIds.remove(userId);
+    });
   }
 
   // ---------------- VALIDATION ----------------
@@ -134,24 +164,24 @@ class _AddTripState extends State<AddTrip> {
 
     if (currentPage == 1) {
       if (selectedStartDate == null || selectedEndDate == null) {
-        setState(() => dateError = "Select both dates");
+        setState(() => dateError = 'Select both dates');
         return false;
       }
 
       if (selectedEndDate!.isBefore(selectedStartDate!)) {
-        setState(() => dateError = "End date cannot be before start date");
+        setState(() => dateError = 'End date cannot be before start date');
         return false;
       }
 
       if (budgetLimitController.text.trim().isEmpty) {
-        showMessage("Enter budget limit");
+        showMessage('Enter budget limit');
         return false;
       }
 
       try {
         double.parse(budgetLimitController.text.trim());
       } catch (_) {
-        showMessage("Invalid budget");
+        showMessage('Invalid budget');
         return false;
       }
     }
@@ -164,6 +194,30 @@ class _AddTripState extends State<AddTrip> {
     setState(() => loading = true);
 
     try {
+      final currentUser = _authService.currentUser;
+
+      if (currentUser == null) {
+        showMessage('No user logged in');
+        if (mounted) setState(() => loading = false);
+        return;
+      }
+
+      final currentUsername = await _authService.getCurrentUsername();
+
+      if (currentUsername == null) {
+        showMessage('Could not load current username');
+        if (mounted) setState(() => loading = false);
+        return;
+      }
+
+      final invitedUserIds = memberIds.where((uid) {
+        return uid != currentUser.uid && !originalMemberIds.contains(uid);
+      }).toList();
+
+      final acceptedMemberIds = memberIds.where((uid) {
+        return uid == currentUser.uid || originalMemberIds.contains(uid);
+      }).toList();
+
       final trip = Trip(
         id: isEditing ? widget.tripToEdit!.id : '',
         name: nameController.text.trim(),
@@ -172,22 +226,43 @@ class _AddTripState extends State<AddTrip> {
         startDate: selectedStartDate!,
         endDate: selectedEndDate!,
         budgetLimit: double.parse(budgetLimitController.text.trim()),
-        memberIds: memberIds,
+        memberIds: acceptedMemberIds,
       );
 
+      String? tripId;
+
       if (isEditing) {
+        tripId = trip.id;
         await TripDatabaseHelper().updateTrip(trip.id, trip.toMap());
       } else {
-        await TripDatabaseHelper().addTrip(trip);
+        tripId = await TripDatabaseHelper().addTrip(trip);
+      }
+
+      if (tripId == null) {
+        showMessage('Trip could not be saved');
+        if (mounted) setState(() => loading = false);
+        return;
+      }
+
+      if (invitedUserIds.isNotEmpty) {
+        await InviteService().createTripInvites(
+          tripId: tripId,
+          tripName: trip.name,
+          invitedByUid: currentUser.uid,
+          invitedByUsername: currentUsername,
+          invitedUserIds: invitedUserIds,
+        );
       }
 
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
-      showMessage("Error: $e");
+      showMessage('Error: $e');
     }
 
-    setState(() => loading = false);
+    if (mounted) {
+      setState(() => loading = false);
+    }
   }
 
   void showMessage(String msg) {
@@ -233,7 +308,6 @@ class _AddTripState extends State<AddTrip> {
           ),
         ),
         const SizedBox(height: 20),
-
         TextField(
           controller: originController,
           decoration: const InputDecoration(
@@ -242,7 +316,6 @@ class _AddTripState extends State<AddTrip> {
           ),
         ),
         const SizedBox(height: 20),
-
         TextField(
           controller: destinationController,
           decoration: const InputDecoration(
@@ -258,15 +331,11 @@ class _AddTripState extends State<AddTrip> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
-        // ---------------- DATE PICKERS ----------------
         const Text(
-          "Trip Dates",
+          'Trip Dates',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-
         const SizedBox(height: 10),
-
         Row(
           children: [
             Expanded(
@@ -274,8 +343,8 @@ class _AddTripState extends State<AddTrip> {
                 onPressed: () => pickDate(true),
                 child: Text(
                   selectedStartDate == null
-                      ? "Start Date"
-                      : selectedStartDate.toString().split(" ")[0],
+                      ? 'Start Date'
+                      : selectedStartDate.toString().split(' ')[0],
                 ),
               ),
             ),
@@ -285,14 +354,13 @@ class _AddTripState extends State<AddTrip> {
                 onPressed: () => pickDate(false),
                 child: Text(
                   selectedEndDate == null
-                      ? "End Date"
-                      : selectedEndDate.toString().split(" ")[0],
+                      ? 'End Date'
+                      : selectedEndDate.toString().split(' ')[0],
                 ),
               ),
             ),
           ],
         ),
-
         if (dateError.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text(
@@ -300,22 +368,17 @@ class _AddTripState extends State<AddTrip> {
             style: const TextStyle(color: Colors.red),
           ),
         ],
-
         const SizedBox(height: 30),
-
-        // ---------------- BUDGET ----------------
         const Text(
-          "Budget",
+          'Budget',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-
         const SizedBox(height: 10),
-
         TextField(
           controller: budgetLimitController,
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
-            labelText: "Budget Limit",
+            labelText: 'Budget Limit',
             border: OutlineInputBorder(),
           ),
         ),
@@ -330,22 +393,17 @@ class _AddTripState extends State<AddTrip> {
         TextField(
           controller: usernameSearchController,
           decoration: const InputDecoration(
-            labelText: "Search users",
+            labelText: 'Search users',
             border: OutlineInputBorder(),
           ),
           onChanged: searchUsers,
         ),
-
         const SizedBox(height: 10),
-
-        // ---------------- SEARCH RESULTS ----------------
         const Text(
-          "Search Results",
+          'Search Results',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-
         const SizedBox(height: 10),
-
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -363,30 +421,39 @@ class _AddTripState extends State<AddTrip> {
             );
           },
         ),
-
         const Divider(height: 30),
-
-        // ---------------- SELECTED MEMBERS ----------------
         const Text(
-          "Selected Members",
+          'Selected Members / Invited Users',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-
         const SizedBox(height: 10),
-
         ListView.builder(
-          shrinkWrap: true, // 🔥 FIX
+          shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: memberIds.length,
           itemBuilder: (context, index) {
             final uid = memberIds[index];
+            final currentUser = _authService.currentUser;
+            final isCurrentUser = currentUser != null && uid == currentUser.uid;
+            final isAlreadyMember = originalMemberIds.contains(uid);
+
+            String subtitle = 'Will receive invite';
+
+            if (isCurrentUser) {
+              subtitle = 'You';
+            } else if (isAlreadyMember) {
+              subtitle = 'Already a member';
+            }
 
             return ListTile(
               title: Text(userNames[uid] ?? uid),
-              trailing: IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: () => removeMember(uid),
-              ),
+              subtitle: Text(subtitle),
+              trailing: isCurrentUser
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.remove_circle, color: Colors.red),
+                      onPressed: () => removeMember(uid),
+                    ),
             );
           },
         ),
@@ -396,37 +463,39 @@ class _AddTripState extends State<AddTrip> {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (currentPage + 1) / pageTitles.length;
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(pageTitles[currentPage]),
+        title: Text(isEditing ? 'Edit Trip' : 'Add Trip'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Expanded(child: SingleChildScrollView(child: buildCurrentPage())),
-
-            LinearProgressIndicator(value: progress),
-
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
+            Text(
+              pageTitles[currentPage],
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            buildCurrentPage(),
+            const SizedBox(height: 30),
+            if (loading)
+              const CircularProgressIndicator()
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
                     onPressed: previousPage,
-                    child: Text(currentPage == 0 ? "Cancel" : "Back"),
+                    child: Text(currentPage == 0 ? 'Cancel' : 'Back'),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: loading ? null : nextPage,
-                    child: Text(currentPage == 2 ? "Save" : "Next"),
+                  ElevatedButton(
+                    onPressed: nextPage,
+                    child: Text(
+                      currentPage == pageTitles.length - 1 ? 'Save' : 'Next',
+                    ),
                   ),
-                ),
-              ],
-            )
+                ],
+              ),
           ],
         ),
       ),
