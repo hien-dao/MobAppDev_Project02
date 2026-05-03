@@ -40,13 +40,13 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
 
     if (lower.contains("museum")) return 180;
     if (lower.contains("tower")) return 90;
-    if (lower.contains("park")) return 120;
-    if (lower.contains("restaurant")) return 90;
+    if (lower.contains("park")) return 90;
+    if (lower.contains("restaurant")) return 60;
     if (lower.contains("church")) return 60;
-    if (lower.contains("landmark")) return 90;
+    if (lower.contains("landmark")) return 60;
     if (lower.contains("cinema")) return 150;
 
-    return 120;
+    return 90;
   }
 
   // ---------------- SEARCH PLACES ----------------
@@ -108,6 +108,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
       durationMinutes: getEstimatedDuration(name), 
 
       order: widget.nextOrder,
+      day: 0,
       addedBy: user?.uid ?? '',
     );
 

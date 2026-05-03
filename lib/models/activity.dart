@@ -15,6 +15,7 @@ class Activity {
   int durationMinutes;
 
   int order; // position in itinerary
+  int day; // Day 0, Day 1, Day 2...
 
   String addedBy; // userId
 
@@ -28,6 +29,7 @@ class Activity {
     required this.endTime,
     required this.durationMinutes,
     required this.order,
+    required this.day,
     required this.addedBy,
   });
 
@@ -42,6 +44,7 @@ class Activity {
       endTime: (data['endTime'] as Timestamp).toDate(),
       durationMinutes: data['durationMinutes'] ?? 120,
       order: data['order'] ?? 0,
+      day: data['day'] ?? 0,
       addedBy: data['addedBy'] ?? '',
     );
   }
@@ -56,6 +59,7 @@ class Activity {
       'endTime': Timestamp.fromDate(endTime),
       'durationMinutes': durationMinutes,
       'order': order,
+      'day': day,
       'addedBy': addedBy,
     };
   }
