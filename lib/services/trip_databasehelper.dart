@@ -9,17 +9,21 @@ class TripDatabaseHelper {
 
   String get currentUserId {
     final user = FirebaseAuth.instance.currentUser;
+
     if (user == null) {
       throw Exception('No user logged in');
     }
+
     return user.uid;
   }
 
-  Future<void> addTrip(Trip trip) async {
+  Future<String?> addTrip(Trip trip) async {
     try {
-      await tripsCollection.add(trip.toMap());
+      final docRef = await tripsCollection.add(trip.toMap());
+      return docRef.id;
     } catch (e) {
       print('Error adding trip: $e');
+      return null;
     }
   }
 
