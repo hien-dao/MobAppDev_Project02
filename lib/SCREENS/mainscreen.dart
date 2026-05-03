@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../models/app_notification.dart';
 import '../models/trip.dart';
 import '../models/trip_invite.dart';
 
+import '../services/app_notification_service.dart';
 import '../services/auth_service.dart';
 import '../services/invite_service.dart';
 import '../services/trip_databasehelper.dart';
@@ -95,17 +97,65 @@ class _MainScreenState extends State<MainScreen> {
     return '$month/$day/$year';
   }
 
+  Widget buildAppNotifications() {
+    return StreamBuilder<List<AppNotification>>(
+      stream: AppNotificationService().getUnreadNotifications(),
+      builder: (context, snapshot) {
+        final notifications = snapshot.data ?? [];
+
+        if (notifications.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          children: [
+            const Text(
+              'Notifications',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: notifications.length,
+              itemBuilder: (context, index) {
+                final notification = notifications[index];
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  child: ListTile(
+                    title: Text(notification.body),
+                    trailing: IconButton(
+                      icon: const Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                      ),
+                      onPressed: () async {
+                        await AppNotificationService()
+                            .markAsRead(notification.id);
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        );
+      },
+    );
+  }
+
   Widget buildPendingInvites() {
     return StreamBuilder<List<TripInvite>>(
       stream: InviteService().getPendingInvitesForCurrentUser(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text('Invite error: ${snapshot.error}'),
-          );
-        }
-
         final invites = snapshot.data ?? [];
 
         if (invites.isEmpty) {
@@ -113,16 +163,15 @@ class _MainScreenState extends State<MainScreen> {
         }
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Pending Invites',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            const Text(
+              'Pending Invites',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -146,14 +195,53 @@ class _MainScreenState extends State<MainScreen> {
                         IconButton(
                           icon: const Icon(Icons.check, color: Colors.green),
                           onPressed: () async {
-                            await InviteService().acceptInvite(invite);
-                            rebuildTripList();
+                            try {
+                              await InviteService().acceptInvite(invite);
+
+                              rebuildTripList();
+
+                              if (!mounted) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('You accepted the request'),
+                                ),
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error accepting request: $e'),
+                                ),
+                              );
+                            }
                           },
                         ),
                         IconButton(
                           icon: const Icon(Icons.close, color: Colors.red),
                           onPressed: () async {
-                            await InviteService().declineInvite(invite);
+                            try {
+                              await InviteService().declineInvite(invite);
+
+                              rebuildTripList();
+
+                              if (!mounted) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('You declined the request'),
+                                ),
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error declining request: $e'),
+                                ),
+                              );
+                            }
                           },
                         ),
                       ],
@@ -162,7 +250,7 @@ class _MainScreenState extends State<MainScreen> {
                 );
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
           ],
         );
       },
@@ -276,6 +364,7 @@ class _MainScreenState extends State<MainScreen> {
             style: TextStyle(fontSize: 24),
           ),
           const SizedBox(height: 20),
+          buildAppNotifications(),
           buildPendingInvites(),
           buildTripList(),
         ],
