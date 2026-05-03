@@ -3,31 +3,29 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/trip.dart';
 
-class TripDatabasehelper {
-  CollectionReference<Map<String, dynamic>> _userTripsCollection() {
+class TripDatabaseHelper {
+  final CollectionReference<Map<String, dynamic>> tripsCollection =
+      FirebaseFirestore.instance.collection('trips');
+
+  String get currentUserId {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) {
-      throw Exception('No user is currently logged in');
+      throw Exception('No user logged in');
     }
-
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('trips');
+    return user.uid;
   }
 
-  Future<void> addTrip(Map<String, dynamic> tripData) async {
+  Future<void> addTrip(Trip trip) async {
     try {
-      await _userTripsCollection().add(tripData);
+      await tripsCollection.add(trip.toMap());
     } catch (e) {
       print('Error adding trip: $e');
     }
   }
 
-  Future<void> updateTrip(String tripId, Map<String, dynamic> updatedData) async {
+  Future<void> updateTrip(String tripId, Map<String, dynamic> data) async {
     try {
-      await _userTripsCollection().doc(tripId).update(updatedData);
+      await tripsCollection.doc(tripId).update(data);
     } catch (e) {
       print('Error updating trip: $e');
     }
@@ -35,17 +33,18 @@ class TripDatabasehelper {
 
   Future<void> deleteTrip(String tripId) async {
     try {
-      await _userTripsCollection().doc(tripId).delete();
+      await tripsCollection.doc(tripId).delete();
     } catch (e) {
       print('Error deleting trip: $e');
     }
   }
 
-  Stream<List<Trip>> getTrips() {
-    return _userTripsCollection().snapshots().map(
-          (snap) => snap.docs
-              .map((d) => Trip.fromMap(d.data(), d.id))
-              .toList(),
-        );
+  Stream<List<Trip>> getUserTrips() {
+    return tripsCollection
+        .where('memberIds', arrayContains: currentUserId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Trip.fromMap(doc.data(), doc.id))
+            .toList());
   }
 }
