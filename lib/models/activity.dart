@@ -29,13 +29,13 @@ class Activity {
     required this.addedBy,
   });
 
-  factory Activity.fromMap(Map<String, dynamic> data, String documentId) {
+  factory Activity.fromMap(Map<String, dynamic> data, String id) {
     return Activity(
-      id: documentId,
+      id: id,
       name: data['name'] ?? '',
-      latitude: (data['latitude'] as num).toDouble(),
-      longitude: (data['longitude'] as num).toDouble(),
-      cost: (data['cost'] as num?)?.toDouble() ?? 0.0,
+      latitude: (data['latitude'] ?? 0).toDouble(),
+      longitude: (data['longitude'] ?? 0).toDouble(),
+      cost: (data['cost'] ?? 0).toDouble(),
       startTime: (data['startTime'] as Timestamp).toDate(),
       endTime: (data['endTime'] as Timestamp).toDate(),
       order: data['order'] ?? 0,

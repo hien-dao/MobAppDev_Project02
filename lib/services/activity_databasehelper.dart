@@ -1,28 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ActivityDatabaseHelper {
-  CollectionReference<Map<String, dynamic>> activityCollection(String tripId) {
-    return FirebaseFirestore.instance
-        .collection('trips')
-        .doc(tripId)
-        .collection('itinerary');
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  CollectionReference<Map<String, dynamic>> _collection(String tripId) {
+    return _db.collection('trips').doc(tripId).collection('activities');
   }
 
   Future<void> addActivity(String tripId, Map<String, dynamic> data) async {
-    await activityCollection(tripId).add(data);
+    await _collection(tripId).add(data);
   }
 
-  Future<void> updateActivity(String tripId, String activityId, Map<String, dynamic> data) async {
-    await activityCollection(tripId).doc(activityId).update(data);
+  Future<void> updateActivity(
+    String tripId,
+    String activityId,
+    Map<String, dynamic> data,
+  ) async {
+    await _collection(tripId).doc(activityId).update(data);
   }
 
   Future<void> deleteActivity(String tripId, String activityId) async {
-    await activityCollection(tripId).doc(activityId).delete();
+    await _collection(tripId).doc(activityId).delete();
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getActivities(String tripId) {
-    return activityCollection(tripId)
-        .orderBy('order')
-        .snapshots();
+    return _collection(tripId).orderBy('order').snapshots();
   }
 }
