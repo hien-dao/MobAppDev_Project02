@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import '../models/activity.dart';
-import '../services/activity_service.dart';
+import '../services/activity_databasehelper.dart';
 import '../services/auth_service.dart';
 import '../services/place_service.dart';
 
@@ -23,7 +23,7 @@ class AddActivityScreen extends StatefulWidget {
 class _AddActivityScreenState extends State<AddActivityScreen> {
   final TextEditingController nameController = TextEditingController();
 
-  final ActivityService _activityService = ActivityService();
+  final ActivityDatabaseHelper _activityDatabaseHelper = ActivityDatabaseHelper();
   final PlaceService _placeService = PlaceService();
 
   bool loading = false;
@@ -112,9 +112,9 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
       addedBy: user?.uid ?? '',
     );
 
-    await _activityService.addActivity(
-      tripId: widget.tripId,
-      activity: activity,
+    await _activityDatabaseHelper.addActivity(
+      widget.tripId,
+      activity.toMap(),
     );
 
     if (!mounted) return;
