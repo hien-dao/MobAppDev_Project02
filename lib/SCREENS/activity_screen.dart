@@ -49,7 +49,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Activities"),
+        title: const Text(
+          "Drag to reorder your activities",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
 
       // ---------------- FAB ----------------
@@ -101,12 +104,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
               .toList();
 
           // 2. Optimize order (distance)
-          final optimized = buildOptimizedList(activities);
+          activities.sort((a, b) => a.order.compareTo(b.order));
 
           // 3. Schedule time (async)
           return FutureBuilder<List<Activity>>(
             future: scheduler.schedule(
-              activities: optimized,
+              activities: activities,
               tripStart: DateTime(
                 widget.trip.startDate.year,
                 widget.trip.startDate.month,
@@ -121,28 +124,51 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
               final scheduled = scheduleSnapshot.data!;
 
-              return ListView.builder(
-                itemCount: scheduled.length,
-                itemBuilder: (context, index) {
-                  final a = scheduled[index];
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  return ReorderableListView.builder(
+                    itemCount: scheduled.length,
+                    onReorder: (oldIndex, newIndex) async {
+                      if (newIndex > oldIndex) newIndex--;
 
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        child: Text("${index + 1}"),
-                      ),
+                      final item = activities.removeAt(oldIndex);
+                      activities.insert(newIndex, item);
 
-                      title: Text(a.name),
+                      // 🔥 update order in memory
+                      for (int i = 0; i < activities.length; i++) {
+                        activities[i].order = i;
+                      }
 
-                      subtitle: Text(
-                        "${formatTime(a.startTime)} - ${formatTime(a.endTime)}\n"
-                        "(${a.durationMinutes} min)",
-                      ),
-                    ),
+                      // 🔥 save to Firebase
+                      for (final a in activities) {
+                        await _db.updateActivity(
+                          widget.trip.id,
+                          a.id,
+                          a.toMap(),
+                        );
+                      }
+
+                      setState(() {});
+                    },
+
+                    itemBuilder: (context, index) {
+                      final a = scheduled[index];
+
+                      return Card(
+                        key: ValueKey(a.id), // REQUIRED
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            child: Text("${index + 1}"),
+                          ),
+                          title: Text(a.name),
+                          subtitle: Text(
+                            "${formatTime(a.startTime)} - ${formatTime(a.endTime)}",
+                          ),
+                          trailing: const Icon(Icons.drag_handle), // UX hint
+                        ),
+                      );
+                    },
                   );
                 },
               );
