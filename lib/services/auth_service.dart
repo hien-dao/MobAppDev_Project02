@@ -130,5 +130,24 @@ class AuthService {
     }
   }
 
+  // Get current user's username
+  Future<String?> getCurrentUsername() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return null;
+
+      final doc = await _usersCollection.doc(user.uid).get();
+
+      if (doc.exists) {
+        return doc['username'];
+      }
+
+      return null;
+    } catch (e) {
+      print('Error getting username: $e');
+      return null;
+    }
+  }
+
   User? get currentUser => _auth.currentUser;
 }

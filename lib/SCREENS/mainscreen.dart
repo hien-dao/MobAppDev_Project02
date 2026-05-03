@@ -7,6 +7,7 @@ import '../services/trip_databasehelper.dart';
 
 import 'firstscreen.dart';
 import 'addtrip.dart';
+import 'activity_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -17,16 +18,26 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   Stream<List<Trip>>? tripStream;
+  String? username;
 
   @override
   void initState() {
     super.initState();
-    tripStream = TripDatabasehelper().getTrips();
+    tripStream = TripDatabaseHelper().getUserTrips();
+    loadUsername();
+  }
+
+  Future<void> loadUsername() async {
+    final name = await AuthService().getCurrentUsername();
+
+    setState(() {
+      username = name;
+    });
   }
 
   void rebuildTripList() {
     setState(() {
-      tripStream = TripDatabasehelper().getTrips();
+      tripStream = TripDatabaseHelper().getUserTrips();
     });
   }
 
@@ -84,7 +95,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Welcome'),
+        title: Text('Hello, ${username ?? 'User'}!'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -141,23 +152,56 @@ class _MainScreenState extends State<MainScreen> {
                         horizontal: 16,
                         vertical: 8,
                       ),
-                      child: ListTile(
-                        title: Text(
-                          trip.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
+                      child: InkWell(
+                        onTap: () {
+                          // 🟦 GO TO ACTIVITY PAGE (WIP)
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ActivityScreen(trip: trip),
+                            ),
+                          );
+                        },
+                        child: ListTile(
+                          title: Text(
+                            trip.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                          subtitle: Text(
+                            '${trip.origin} to ${trip.destination}\n'
+                            '${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}\n'
+                            'Budget Limit: \$${trip.budgetLimit.toStringAsFixed(2)}',
+                          ),
+
+                          isThreeLine: true,
+
+                          // ---------------- ACTIONS ----------------
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+
+                              // ✏️ EDIT BUTTON
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () {
+                                  openEditTripPage(trip);
+                                },
+                              ),
+
+                              // 🗑 DELETE BUTTON
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () async {
+                                  await TripDatabaseHelper().deleteTrip(trip.id);
+                                  rebuildTripList();
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                        subtitle: Text(
-                          '${trip.origin} to ${trip.destination}\n'
-                          '${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}\n'
-                          'Cost: \$${trip.totalCost.toStringAsFixed(2)}',
-                        ),
-                        isThreeLine: true,
-                        trailing: const Icon(Icons.edit),
-                        onTap: () {
-                          openEditTripPage(trip);
-                        },
                       ),
                     );
                   },
