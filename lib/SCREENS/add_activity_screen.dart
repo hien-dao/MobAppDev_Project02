@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 import '../models/activity.dart';
 import '../services/activity_service.dart';
 import '../services/auth_service.dart';
+import '../services/place_service.dart';
 
 class AddActivityScreen extends StatefulWidget {
   final String tripId;
@@ -20,13 +22,57 @@ class AddActivityScreen extends StatefulWidget {
 
 class _AddActivityScreenState extends State<AddActivityScreen> {
   final TextEditingController nameController = TextEditingController();
-  final ActivityService _service = ActivityService();
+
+  final ActivityService _activityService = ActivityService();
+  final PlaceService _placeService = PlaceService();
 
   bool loading = false;
+  bool searching = false;
+  Timer? _debounce;
 
+  List<Map<String, dynamic>> suggestions = [];
+
+  Map<String, dynamic>? selectedPlace;
+
+  // ---------------- SEARCH PLACES ----------------
+  Future<void> searchPlaces(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() => suggestions = []);
+      return;
+    }
+
+    setState(() => searching = true);
+
+    try {
+      final results = await _placeService.searchPlaces(query);
+
+      if (!mounted) return;
+
+      setState(() {
+        suggestions = results;
+        searching = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        suggestions = [];
+        searching = false;
+      });
+    }
+  }
+
+  void selectPlace(Map<String, dynamic> place) {
+    setState(() {
+      selectedPlace = place;
+      nameController.text = place['name'];
+      suggestions = [];
+    });
+  }
+
+  // ---------------- SAVE ----------------
   Future<void> addActivity() async {
     final name = nameController.text.trim();
-
     if (name.isEmpty) return;
 
     setState(() => loading = true);
@@ -36,16 +82,20 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
     final activity = Activity(
       id: '',
       name: name,
-      latitude: 0,
-      longitude: 0,
+
+      latitude: selectedPlace?['lat'] ?? 0,
+      longitude: selectedPlace?['lon'] ?? 0,
+
       cost: 0,
+
       startTime: DateTime.now(),
       endTime: DateTime.now(),
+
       order: widget.nextOrder,
       addedBy: user?.uid ?? '',
     );
 
-    await _service.addActivity(
+    await _activityService.addActivity(
       tripId: widget.tripId,
       activity: activity,
     );
@@ -61,6 +111,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
     super.dispose();
   }
 
+  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,23 +124,80 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
         child: Column(
           children: [
 
+            // ---------------- INPUT ----------------
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
-                labelText: "Activity name",
+                labelText: "Search activity (e.g. Eiffel Tower)",
                 border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+                _debounce = Timer(const Duration(milliseconds: 500), () {
+                  searchPlaces(value);
+                });
+              },
+            ),
+
+            const SizedBox(height: 10),
+
+            if (searching) const LinearProgressIndicator(),
+
+            const SizedBox(height: 10),
+
+            // ---------------- SUGGESTIONS ----------------
+            Expanded(
+              child: ListView.builder(
+                itemCount: suggestions.length,
+                itemBuilder: (context, index) {
+                  final place = suggestions[index];
+
+                  return ListTile(
+                    title: Text(place['name']),
+                    subtitle: Text(
+                      "Lat: ${place['lat']}, Lng: ${place['lon']}",
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onTap: () => selectPlace(place),
+                  );
+                },
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
+            // ---------------- SELECTED ----------------
+            if (selectedPlace != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "Selected: ${selectedPlace!['name']}",
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: 10),
+
+            // ---------------- BUTTON ----------------
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: loading ? null : addActivity,
                 child: loading
                     ? const CircularProgressIndicator()
-                    : const Text("Add"),
+                    : const Text("Add Activity"),
               ),
             ),
           ],
