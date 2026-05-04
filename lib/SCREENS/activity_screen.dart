@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -125,9 +127,29 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   // ---------------- ACTIVITY TILE ----------------
   Widget buildActivityTile(Activity a) {
+    print("IMAGE URL: ${a.imageUrl}");
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: ListTile(
+      child: ListTile(
+        leading: GestureDetector(
+          onTap: () => pickAndUploadImage(a),
+          child: a.imageUrl != null
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.network(
+                    a.imageUrl!,
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              : Container(
+                  width: 50,
+                  height: 50,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.add_a_photo),
+                ),
+        ),
         title: Text(a.name),
         subtitle: Text(
           "${formatTime(a.startTime)} - ${formatTime(a.endTime)}",
@@ -199,6 +221,38 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   }
 
+  // IMAGE PICKER
+  bool _isUploading = false;
+
+  Future<void> pickAndUploadImage(Activity activity) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+
+    if (picked == null) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final url = await _db.uploadActivityImage(
+        tripId: widget.trip.id,
+        activityId: activity.id,
+        file: File(picked.path),
+      );
+
+      print("GOT URL: $url");
+
+      await _db.setActivityImage(
+        widget.trip.id,
+        activity.id,
+        url,
+      );
+    } catch (e) {
+      print("Upload error: $e");
+    }
+
+    setState(() => _isUploading = false);
+  }
+
   // ---------------- BUILD ----------------
   @override
   Widget build(BuildContext context) {
@@ -248,64 +302,73 @@ class _ActivityScreenState extends State<ActivityScreen> {
     ),
 
     // ---------------- BODY ----------------
-    body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: _db.getActivities(widget.trip.id),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final docs = snapshot.data?.docs ?? [];
-
-        if (docs.isEmpty) {
-          return const Center(child: Text("No activities yet"));
-        }
-
-        _activities = docs
-            .map((doc) => Activity.fromMap(doc.data(), doc.id))
-            .toList();
-
-        _activities.sort((a, b) => a.order.compareTo(b.order));
-
-        return FutureBuilder<List<Activity>>(
-          future: scheduler.schedule(
-            activities: _activities,
-            tripStart: DateTime(
-              widget.trip.startDate.year,
-              widget.trip.startDate.month,
-              widget.trip.startDate.day,
-            ),
-            tripEnd: DateTime(
-              widget.trip.endDate.year,
-              widget.trip.endDate.month,
-              widget.trip.endDate.day,
-            ),
-          ),
-          builder: (context, scheduleSnapshot) {
-            final scheduled =
-                scheduleSnapshot.data ?? _activities;
-
-            // GROUP BY DAY
-            Map<int, List<Activity>> grouped = {};
-
-            for (var a in scheduled) {
-              grouped.putIfAbsent(a.day, () => []).add(a);
+    body: Stack(
+      children: [
+        StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: _db.getActivities(widget.trip.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
             }
 
-            return ListView(
-              children: grouped.entries.map((entry) {
-                final day = entry.key;
-                final activities = entry.value;
+          final docs = snapshot.data?.docs ?? [];
 
-                return buildDaySection(day, activities);
-              }).toList(),
-            );
-          },
-        );
-      },
+          if (docs.isEmpty) {
+            return const Center(child: Text("No activities yet"));
+          }
+
+          _activities = docs
+              .map((doc) => Activity.fromMap(doc.data(), doc.id))
+              .toList();
+
+          _activities.sort((a, b) => a.order.compareTo(b.order));
+
+          return FutureBuilder<List<Activity>>(
+            future: scheduler.schedule(
+              activities: _activities,
+              tripStart: DateTime(
+                widget.trip.startDate.year,
+                widget.trip.startDate.month,
+                widget.trip.startDate.day,
+              ),
+              tripEnd: DateTime(
+                widget.trip.endDate.year,
+                widget.trip.endDate.month,
+                widget.trip.endDate.day,
+              ),
+            ),
+            builder: (context, scheduleSnapshot) {
+              final scheduled =
+                  scheduleSnapshot.data ?? _activities;
+
+              // GROUP BY DAY
+              Map<int, List<Activity>> grouped = {};
+
+              for (var a in scheduled) {
+                grouped.putIfAbsent(a.day, () => []).add(a);
+              }
+
+              return ListView(
+                children: grouped.entries.map((entry) {
+                  final day = entry.key;
+                  final activities = entry.value;
+
+                  return buildDaySection(day, activities);
+                }).toList(),
+              );
+            },
+          );
+        },
+      ),
+      if (_isUploading)
+        Container(
+          color: Colors.black54,
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ],
     ),
   );
-
-
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/activity.dart';
 import '../services/activity_databasehelper.dart';
@@ -94,19 +95,21 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
 
     final user = AuthService().currentUser;
 
-    final activity = Activity(
-      id: '',
-      name: name,
+    final docRef = FirebaseFirestore.instance
+      .collection('trips')
+      .doc(widget.tripId)
+      .collection('activities')
+      .doc(); // pre-generated ID
 
+    final activity = Activity(
+      id: docRef.id,
+      name: name,
       latitude: selectedPlace?['lat'] ?? 0,
       longitude: selectedPlace?['lon'] ?? 0,
-
       cost: 0,
-
       startTime: DateTime.now(),
       endTime: DateTime.now(),
-      durationMinutes: getEstimatedDuration(name), 
-
+      durationMinutes: getEstimatedDuration(name),
       order: widget.nextOrder,
       day: 0,
       addedBy: user?.uid ?? '',

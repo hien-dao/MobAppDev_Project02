@@ -17,6 +17,8 @@ class Activity {
   int order; // position in itinerary
   int day; // Day 0, Day 1, Day 2...
 
+  String? imageUrl;
+
   String addedBy; // userId
 
   Activity({
@@ -31,6 +33,7 @@ class Activity {
     required this.order,
     required this.day,
     required this.addedBy,
+    
   });
 
   factory Activity.fromMap(Map<String, dynamic> data, String id) {
@@ -60,6 +63,7 @@ class Activity {
       'durationMinutes': durationMinutes,
       'order': order,
       'day': day,
+      'imageUrl': imageUrl,
       'addedBy': addedBy,
     };
   }
