@@ -39,14 +39,49 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
   int getEstimatedDuration(String name) {
     final lower = name.toLowerCase();
 
+    // 🏛 Museums / exhibitions
     if (lower.contains("museum")) return 180;
-    if (lower.contains("tower")) return 90;
-    if (lower.contains("park")) return 90;
-    if (lower.contains("restaurant")) return 60;
-    if (lower.contains("church")) return 60;
-    if (lower.contains("landmark")) return 60;
-    if (lower.contains("cinema")) return 150;
+    if (lower.contains("gallery")) return 120;
+    if (lower.contains("exhibition")) return 120;
+    if (lower.contains("art")) return 120;
 
+    // 🗼 Landmarks / towers
+    if (lower.contains("tower")) return 90;
+    if (lower.contains("statue")) return 60;
+    if (lower.contains("monument")) return 60;
+
+    // 🌳 Nature / outdoor
+    if (lower.contains("park")) return 90;
+    if (lower.contains("garden")) return 90;
+    if (lower.contains("beach")) return 120;
+    if (lower.contains("lake")) return 60;
+    if (lower.contains("mountain")) return 240;
+
+    // 🍽 Food
+    if (lower.contains("restaurant")) return 60;
+    if (lower.contains("cafe")) return 45;
+    if (lower.contains("coffee")) return 30;
+    if (lower.contains("bar")) return 90;
+    if (lower.contains("pub")) return 90;
+
+    // ⛪ Culture / buildings
+    if (lower.contains("church")) return 60;
+    if (lower.contains("cathedral")) return 75;
+    if (lower.contains("mosque")) return 60;
+    if (lower.contains("temple")) return 60;
+
+    // 🎭 Entertainment
+    if (lower.contains("cinema")) return 150;
+    if (lower.contains("theater")) return 120;
+    if (lower.contains("stadium")) return 180;
+    if (lower.contains("zoo")) return 150;
+
+    // 🛍 Shopping
+    if (lower.contains("mall")) return 120;
+    if (lower.contains("market")) return 90;
+    if (lower.contains("store")) return 45;
+
+    // 🚶 default sightseeing
     return 90;
   }
 
